@@ -159,7 +159,7 @@ export class GameScene {
   
   dispose(): void {
     window.removeEventListener('resize', this.onResize);
-    this.renderer.dispose();
+    (this.renderer as unknown as { dispose?: () => void }).dispose?.();
   }
 }
 

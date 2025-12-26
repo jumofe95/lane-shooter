@@ -6,6 +6,12 @@
 
 import { Game } from './game/Game';
 
+declare global {
+  interface Navigator {
+    gpu?: unknown;
+  }
+}
+
 async function main() {
   const container = document.getElementById('game-container');
   const errorDiv = document.getElementById('error');
