@@ -163,7 +163,8 @@ export class Game {
   };
   
   private handleInput(): void {
-    if (this.input.wasJustPressed('Space')) {
+    // Teclado o Touch para iniciar/reiniciar
+    if (this.input.wasJustPressed('Space') || this.input.wasTouchStarted()) {
       if (this.state === 'start') {
         this.startGame();
       } else if (this.state === 'gameover' || this.state === 'victory') {
@@ -187,12 +188,18 @@ export class Game {
   }
   
   private update(dt: number): void {
-    // Input de movimiento
+    // Input de movimiento (teclado)
     if (this.input.isAnyPressed('ArrowLeft', 'KeyA')) {
       this.player.move(-1, dt);
     }
     if (this.input.isAnyPressed('ArrowRight', 'KeyD')) {
       this.player.move(1, dt);
+    }
+    
+    // Input de movimiento (táctil/swipe)
+    const swipeDir = this.input.getSwipeDirection();
+    if (swipeDir !== 0) {
+      this.player.move(swipeDir, dt);
     }
     
     // Actualizar jugador

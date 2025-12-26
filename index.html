@@ -17,6 +17,10 @@
       background: #000;
       overflow: hidden;
       font-family: 'Rajdhani', sans-serif;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     
     #game-container {
@@ -265,6 +269,41 @@
       color: #00ffc8;
     }
     
+    /* Responsive: mostrar/ocultar según dispositivo */
+    .desktop-only {
+      display: block;
+    }
+    .mobile-only {
+      display: none;
+    }
+    
+    @media (max-width: 768px), (pointer: coarse) {
+      .desktop-only {
+        display: none;
+      }
+      .mobile-only {
+        display: block;
+      }
+      
+      .stats-panel {
+        transform: scale(0.85);
+        transform-origin: top left;
+      }
+      
+      .wave-indicator {
+        transform: scale(0.85);
+        transform-origin: top right;
+      }
+      
+      .center-message h1 {
+        font-size: 2.5rem;
+      }
+      
+      .player-health-bar {
+        width: 200px;
+      }
+    }
+    
     /* Error message */
     #error {
       position: absolute;
@@ -341,21 +380,24 @@
         <h1>Lane Shooter</h1>
         <p>Destruye enemigos y atraviesa las puertas</p>
         <p>para obtener mejoras</p>
-        <div class="prompt">Presiona ESPACIO para comenzar</div>
+        <div class="prompt desktop-only">Presiona ESPACIO para comenzar</div>
+        <div class="prompt mobile-only">Toca la pantalla para comenzar</div>
       </div>
       
       <!-- Game Over -->
       <div class="center-message gameover" id="gameover-screen">
         <h1>Game Over</h1>
         <div class="score">Puntuación: <span id="final-score">0</span></div>
-        <div class="prompt">Presiona ESPACIO para reintentar</div>
+        <div class="prompt desktop-only">Presiona ESPACIO para reintentar</div>
+        <div class="prompt mobile-only">Toca para reintentar</div>
       </div>
       
       <!-- Victory -->
       <div class="center-message victory" id="victory-screen">
         <h1>¡Victoria!</h1>
         <div class="score">Puntuación Final: <span id="victory-score">0</span></div>
-        <div class="prompt">Presiona ESPACIO para jugar de nuevo</div>
+        <div class="prompt desktop-only">Presiona ESPACIO para jugar de nuevo</div>
+        <div class="prompt mobile-only">Toca para jugar de nuevo</div>
       </div>
       
       <!-- Player Health Bar -->
@@ -367,8 +409,11 @@
       </div>
       
       <!-- Controls -->
-      <div class="controls-hint">
+      <div class="controls-hint desktop-only">
         <span>← →</span> o <span>A D</span> Mover &nbsp;|&nbsp; Auto-disparo activado
+      </div>
+      <div class="controls-hint mobile-only">
+        <span>Desliza</span> izquierda/derecha para mover &nbsp;|&nbsp; Auto-disparo activado
       </div>
     </div>
     
