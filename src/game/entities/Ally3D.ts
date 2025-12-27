@@ -193,7 +193,8 @@ export class Ally3D extends Entity3D {
     this.index = index;
     this.targetX = x;
     this.targetZ = z;
-    this.shootOffset = (index * 0.2) % 1;
+    // Pequeño offset inicial solo para evitar que todos disparen en el mismo frame
+    this.shootOffset = (index * 0.15) % 0.5;
     this.shootTimer = this.shootOffset;
     this.walkPhase = index * 0.7;
   }
@@ -206,7 +207,9 @@ export class Ally3D extends Entity3D {
     this.targetX = x;
     this.targetZ = z;
     this.active = true;
-    this.shootOffset = (index * 0.2) % 1;
+    // Pequeño offset inicial solo para evitar que todos disparen en el mismo frame
+    // pero la cadencia será exactamente la misma
+    this.shootOffset = (index * 0.15) % 0.5;
     this.shootTimer = this.shootOffset;
     this.walkPhase = index * 0.7;
     this.shootRecoil = 0;
@@ -285,7 +288,8 @@ export class Ally3D extends Entity3D {
     const shootInterval = 1 / player.stats.fireRate;
 
     if (this.shootTimer >= shootInterval) {
-      this.shootTimer = this.shootOffset;
+      // Resetear a 0 para mantener exactamente la misma cadencia que el jugador
+      this.shootTimer = 0;
       this.shootRecoil = 1;
 
       // Usar pool de balas

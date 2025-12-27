@@ -46,7 +46,7 @@ export const CONFIG = {
   
   // Aliados (mismo tamaño que jugador)
   ALLY_SIZE: 0.7,
-  ALLY_SPACING: 1.8,
+  ALLY_SPACING: 1.0,
   
   // Enemigos (stickmans grandes) - valores base
   ENEMY_SIZE: 1.5,
