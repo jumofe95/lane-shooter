@@ -40,6 +40,11 @@ export class Boss3D extends Entity3D {
   private attackPhase: number = 0;
   attackType: BossAttackType = 'triple_shot';
   
+  // Movimiento lateral
+  private lateralSpeed: number = 0;
+  private lateralDirection: number = 1;
+  private lateralAmplitude: number = 0;
+  
   constructor(health?: number, speed?: number, value?: number, level?: number) {
     const group = new THREE.Group();
     
@@ -56,6 +61,11 @@ export class Boss3D extends Entity3D {
     // Asignar ataque especial según el nivel
     this.attackType = this.getAttackTypeForLevel(this.level);
     this.attackCooldown = this.getAttackCooldownForLevel(this.level);
+    
+    // Movimiento lateral - más rápido y amplio según el nivel
+    this.lateralSpeed = 1 + this.level * 0.5; // Velocidad: 1.5 a 6
+    this.lateralAmplitude = CONFIG.GAME_WIDTH * 0.25 + this.level * 0.3; // Amplitud crece con nivel
+    this.lateralDirection = Math.random() > 0.5 ? 1 : -1; // Dirección inicial aleatoria
     
     const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
     const lineThickness = 0.2;
@@ -243,9 +253,26 @@ export class Boss3D extends Entity3D {
   }
   
   update(dt: number): void {
+    // Avance hacia el jugador
     if (this.z < -10) {
       this.z += this.bossSpeed * dt;
     }
+    
+    // Movimiento lateral
+    this.x += this.lateralSpeed * this.lateralDirection * dt;
+    
+    // Cambiar dirección al llegar a los límites
+    const maxX = this.lateralAmplitude;
+    if (this.x > maxX) {
+      this.x = maxX;
+      this.lateralDirection = -1;
+    } else if (this.x < -maxX) {
+      this.x = -maxX;
+      this.lateralDirection = 1;
+    }
+    
+    // Inclinación visual al moverse
+    this.mesh.rotation.z = -this.lateralDirection * 0.1;
     
     this.animationPhase += dt * 8;
     const phase = this.animationPhase;
@@ -352,8 +379,22 @@ export class Boss3D extends Entity3D {
         break;
         
       case 'wave':
-        // Onda expansiva circular
-        projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage * 1.5, 'wave'));
+        // Ráfaga de ondas + disparos direccionales
+        // Onda central
+        projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage, 'wave'));
+        
+        // Disparos en abanico (5 direcciones)
+        for (let i = -2; i <= 2; i++) {
+          const angle = i * 0.25;
+          const dir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
+          projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage * 0.8, 'orb', dir, 8));
+        }
+        
+        // Disparos laterales rápidos
+        const leftDir = new THREE.Vector3(-0.7, 0, 0.7);
+        const rightDir = new THREE.Vector3(0.7, 0, 0.7);
+        projectiles.push(new BossProjectile(this.x - 1, this.z + 1, baseDamage, 'orb', leftDir, 12));
+        projectiles.push(new BossProjectile(this.x + 1, this.z + 1, baseDamage, 'orb', rightDir, 12));
         break;
         
       case 'rain':
