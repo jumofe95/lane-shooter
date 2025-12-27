@@ -1,17 +1,21 @@
 /**
  * ============================================
- * BOSS3D - Jefe Stickman gigante con barra de vida
+ * BOSS3D - Jefe Stickman gigante con barra de vida y ataques especiales
  * ============================================
  */
 
 import * as THREE from 'three';
 import { Entity3D } from './Entity3D';
 import { CONFIG, COLORS } from '../types';
+import { BossProjectile, ProjectileType } from './BossProjectile';
+
+export type BossAttackType = 'triple_shot' | 'wave' | 'rain' | 'laser_sweep' | 'minion_call';
 
 export class Boss3D extends Entity3D {
   health: number;
   maxHealth: number;
   value: number = 100;
+  level: number = 1;
   private bossSpeed: number;
   
   private head: THREE.Group;
@@ -29,7 +33,14 @@ export class Boss3D extends Entity3D {
   private animationPhase: number = 0;
   rings: THREE.Mesh[] = [];
   
-  constructor(health?: number, speed?: number, value?: number) {
+  // Sistema de ataques especiales
+  private attackTimer: number = 0;
+  private attackCooldown: number = 3;
+  private isAttacking: boolean = false;
+  private attackPhase: number = 0;
+  attackType: BossAttackType = 'triple_shot';
+  
+  constructor(health?: number, speed?: number, value?: number, level?: number) {
     const group = new THREE.Group();
     
     super(group);
@@ -38,8 +49,13 @@ export class Boss3D extends Entity3D {
     const bossHealth = health ?? CONFIG.BOSS_HEALTH_BASE;
     const bossSpeedVal = speed ?? CONFIG.BOSS_SPEED_BASE;
     const bossValue = value ?? 100;
+    this.level = level ?? 1;
     
     this.bossSpeed = bossSpeedVal;
+    
+    // Asignar ataque especial según el nivel
+    this.attackType = this.getAttackTypeForLevel(this.level);
+    this.attackCooldown = this.getAttackCooldownForLevel(this.level);
     
     const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
     const lineThickness = 0.2;
@@ -275,6 +291,127 @@ export class Boss3D extends Entity3D {
   
   get healthPercent(): number {
     return this.health / this.maxHealth;
+  }
+  
+  // Determinar tipo de ataque según nivel
+  private getAttackTypeForLevel(level: number): BossAttackType {
+    if (level <= 2) return 'triple_shot';      // Niveles 1-2: Disparo triple
+    if (level <= 4) return 'wave';             // Niveles 3-4: Onda expansiva
+    if (level <= 6) return 'rain';             // Niveles 5-6: Lluvia de proyectiles
+    if (level <= 8) return 'laser_sweep';      // Niveles 7-8: Barrido láser
+    return 'minion_call';                       // Niveles 9-10: Combo de ataques
+  }
+  
+  private getAttackCooldownForLevel(level: number): number {
+    // Bosses más difíciles atacan más seguido
+    return Math.max(1.5, 3.5 - level * 0.2);
+  }
+  
+  // Actualizar ataque - devuelve proyectiles generados
+  updateAttack(dt: number, playerX: number): BossProjectile[] {
+    const projectiles: BossProjectile[] = [];
+    
+    // Solo atacar cuando está en posición
+    if (this.z > -8) return projectiles;
+    
+    this.attackTimer += dt;
+    
+    if (this.attackTimer >= this.attackCooldown) {
+      this.attackTimer = 0;
+      this.isAttacking = true;
+      this.attackPhase = 0;
+      
+      // Generar proyectiles según el tipo de ataque
+      const newProjectiles = this.executeAttack(playerX);
+      projectiles.push(...newProjectiles);
+    }
+    
+    // Animación de ataque
+    if (this.isAttacking) {
+      this.attackPhase += dt * 5;
+      if (this.attackPhase >= 1) {
+        this.isAttacking = false;
+      }
+    }
+    
+    return projectiles;
+  }
+  
+  private executeAttack(playerX: number): BossProjectile[] {
+    const projectiles: BossProjectile[] = [];
+    const baseDamage = 10 + this.level * 3;
+    
+    switch (this.attackType) {
+      case 'triple_shot':
+        // Disparo triple hacia el jugador
+        for (let i = -1; i <= 1; i++) {
+          const angle = Math.atan2(playerX - this.x, 15) + i * 0.3;
+          const dir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
+          projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage, 'orb', dir, 10));
+        }
+        break;
+        
+      case 'wave':
+        // Onda expansiva circular
+        projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage * 1.5, 'wave'));
+        break;
+        
+      case 'rain':
+        // Lluvia de proyectiles desde arriba
+        const rainCount = 5 + Math.floor(this.level / 2);
+        for (let i = 0; i < rainCount; i++) {
+          const rainX = (Math.random() - 0.5) * CONFIG.GAME_WIDTH * 0.8;
+          const rainZ = this.z + 5 + Math.random() * 10;
+          const proj = new BossProjectile(rainX, rainZ, baseDamage * 0.7, 'rain');
+          proj.mesh.position.y = 5 + Math.random() * 2;
+          projectiles.push(proj);
+        }
+        break;
+        
+      case 'laser_sweep':
+        // Barrido de láser horizontal
+        const laserCount = 3;
+        for (let i = 0; i < laserCount; i++) {
+          const laserX = -CONFIG.GAME_WIDTH / 3 + (i * CONFIG.GAME_WIDTH / 3);
+          const dir = new THREE.Vector3(0, 0, 1);
+          const laser = new BossProjectile(laserX, this.z + 1, baseDamage * 1.2, 'laser', dir, 15);
+          laser.mesh.rotation.x = Math.PI / 2;
+          projectiles.push(laser);
+        }
+        break;
+        
+      case 'minion_call':
+        // Combo: disparo + onda (bosses finales)
+        // Disparo central
+        const centerDir = new THREE.Vector3(0, 0, 1);
+        projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage, 'orb', centerDir, 12));
+        
+        // Disparos laterales
+        for (let i = -1; i <= 1; i += 2) {
+          const sideAngle = i * 0.5;
+          const sideDir = new THREE.Vector3(Math.sin(sideAngle), 0, Math.cos(sideAngle));
+          projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage * 0.8, 'orb', sideDir, 8));
+        }
+        
+        // Mini onda
+        const miniWave = new BossProjectile(this.x, this.z + 1, baseDamage * 0.5, 'wave');
+        miniWave.maxLifetime = 2;
+        projectiles.push(miniWave);
+        break;
+    }
+    
+    return projectiles;
+  }
+  
+  // Obtener nombre del ataque para mostrar
+  getAttackName(): string {
+    switch (this.attackType) {
+      case 'triple_shot': return '⚡ Disparo Triple';
+      case 'wave': return '🌊 Onda Expansiva';
+      case 'rain': return '☔ Lluvia Mortal';
+      case 'laser_sweep': return '⚡ Barrido Láser';
+      case 'minion_call': return '💀 Furia Final';
+    }
   }
 }
 

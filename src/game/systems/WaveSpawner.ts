@@ -15,6 +15,7 @@ export class WaveSpawner {
   private paused: boolean = false;
   private currentLevel: number = 1;
   private initialized: boolean = false;
+  private currentAllyCount: number = 0;
 
   setLevel(level: number): void {
     this.currentLevel = level;
@@ -29,7 +30,7 @@ export class WaveSpawner {
     }
   }
 
-  update(dt: number, scene: THREE.Group): Enemy3D[] {
+  update(dt: number, scene: THREE.Group, allyCount: number = 0): Enemy3D[] {
     if (this.paused) return [];
 
     // Asegurar inicialización
@@ -37,6 +38,7 @@ export class WaveSpawner {
       this.init(scene);
     }
 
+    this.currentAllyCount = allyCount;
     const levelConfig = getLevelConfig(this.currentLevel);
 
     this.waveTimer += dt;
@@ -57,8 +59,11 @@ export class WaveSpawner {
 
     // Más enemigos según el nivel y la oleada actual
     const baseCount = levelConfig.enemiesPerWave;
-    const waveBonus = this.currentWave;
-    const enemyCount = baseCount + waveBonus;
+    const waveBonus = Math.floor(this.currentWave / 2); // +1 enemigo cada 2 oleadas
+    
+    // Multiplicador según aliados: +50% enemigos por cada aliado
+    const allyMultiplier = 1 + (this.currentAllyCount * 0.5);
+    const enemyCount = Math.floor((baseCount + waveBonus) * allyMultiplier);
 
     const positions = this.generateSpawnPositions(enemyCount);
 

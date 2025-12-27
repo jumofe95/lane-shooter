@@ -77,7 +77,7 @@ export const CONFIG = {
   GATE_COUNT_MAX: 2,
   
   // Oleadas - valores base
-  WAVE_ENEMY_COUNT_BASE: 4,
+  WAVE_ENEMY_COUNT_BASE: 3,
   WAVE_SPAWN_INTERVAL_BASE: 3.5,
   WAVES_BEFORE_BOSS: 6,
   

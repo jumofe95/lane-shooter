@@ -10,6 +10,7 @@ import { Player3D } from './entities/Player3D';
 import { Ally3D } from './entities/Ally3D';
 import { Enemy3D } from './entities/Enemy3D';
 import { Boss3D } from './entities/Boss3D';
+import { BossProjectile } from './entities/BossProjectile';
 import { Bullet3D } from './entities/Bullet3D';
 import { Gate3D } from './entities/Gate3D';
 import { WaveSpawner } from './systems/WaveSpawner';
@@ -32,6 +33,7 @@ export class Game {
   private bullets: Bullet3D[] = [];
   private gates: Gate3D[] = [];
   private boss: Boss3D | null = null;
+  private bossProjectiles: BossProjectile[] = [];
   
   private waveSpawner: WaveSpawner;
   private gateSpawner: GateSpawner;
@@ -203,6 +205,10 @@ export class Game {
       this.scene.entityGroup.remove(this.boss.mesh);
       this.boss = null;
     }
+    for (const proj of this.bossProjectiles) {
+      this.scene.entityGroup.remove(proj.mesh);
+    }
+    this.bossProjectiles = [];
     
     // Limpiar todo el grupo de entidades por si quedó algo
     while (this.scene.entityGroup.children.length > 0) {
@@ -252,10 +258,14 @@ export class Game {
       this.scene.entityGroup.remove(this.boss.mesh);
       this.boss = null;
     }
+    for (const proj of this.bossProjectiles) {
+      this.scene.entityGroup.remove(proj.mesh);
+    }
     
     this.enemies = [];
     this.bullets = [];
     this.gates = [];
+    this.bossProjectiles = [];
   }
   
   private startNextLevel(): void {
@@ -371,9 +381,9 @@ export class Game {
     }
     this.bullets = this.bullets.filter(b => b.active);
     
-    // Spawn de enemigos
+    // Spawn de enemigos (cantidad escala con aliados)
     if (!this.boss && !this.waveSpawner.isBossTime) {
-      const newEnemies = this.waveSpawner.update(dt, this.scene.entityGroup);
+      const newEnemies = this.waveSpawner.update(dt, this.scene.entityGroup, this.player.stats.numAllies);
       this.enemies.push(...newEnemies);
       
       if (newEnemies.length > 0) {
@@ -404,11 +414,44 @@ export class Game {
     }
     this.enemies = this.enemies.filter(e => e.active);
     
-    // Actualizar boss
+    // Actualizar boss y sus ataques
     if (this.boss) {
       this.boss.update(dt);
       this.bossBarEl.style.width = `${this.boss.healthPercent * 100}%`;
+      
+      // Actualizar ataques especiales del boss
+      const newProjectiles = this.boss.updateAttack(dt, this.player.x);
+      for (const proj of newProjectiles) {
+        this.scene.entityGroup.add(proj.mesh);
+        this.bossProjectiles.push(proj);
+      }
     }
+    
+    // Actualizar proyectiles del boss
+    for (const proj of this.bossProjectiles) {
+      proj.update(dt);
+      
+      // Verificar colisión con jugador
+      if (proj.checkPlayerCollision(this.player.x, this.player.z)) {
+        this.player.takeDamage(proj.damage);
+        proj.active = false;
+        this.updatePlayerHealthBar();
+        
+        if (this.player.currentHealth <= 0) {
+          this.gameOver();
+          return;
+        }
+      }
+    }
+    
+    // Limpiar proyectiles inactivos
+    this.bossProjectiles = this.bossProjectiles.filter(proj => {
+      if (!proj.active) {
+        this.scene.entityGroup.remove(proj.mesh);
+        return false;
+      }
+      return true;
+    });
     
     // Spawn de puertas
     const hasActiveGates = this.gates.length > 0;
@@ -563,13 +606,14 @@ export class Game {
     this.boss = new Boss3D(
       levelConfig.bossHealth,
       levelConfig.bossSpeed,
-      levelConfig.bossValue
+      levelConfig.bossValue,
+      this.currentLevel
     );
     this.scene.entityGroup.add(this.boss.mesh);
     this.bossHealthEl.classList.add('visible');
     this.waveSpawner.pause();
     
-    console.log(`👹 ¡BOSS del Nivel ${this.currentLevel} APARECIÓ!`);
+    console.log(`👹 ¡BOSS del Nivel ${this.currentLevel} APARECIÓ! Ataque: ${this.boss.getAttackName()}`);
   }
   
   private updateUI(): void {
