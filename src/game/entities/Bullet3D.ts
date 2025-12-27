@@ -32,13 +32,24 @@ export class Bullet3D extends Entity3D {
       isPlayerBullet ? SharedMaterials.bulletPlayer : SharedMaterials.bulletEnemy
     );
     bullet.position.set(x, 0.5, z);
-    
+
     super(bullet);
-    
+
     this.damage = damage;
     this.piercing = piercing;
     this.isPlayerBullet = isPlayerBullet;
     this.speed = isPlayerBullet ? -CONFIG.BULLET_SPEED : CONFIG.BULLET_ENEMY_SPEED;
+  }
+
+  // Método para reiniciar una bala del pool
+  reset(x: number, z: number, damage: number, piercing: number): void {
+    this.x = x;
+    this.z = z;
+    this.mesh.position.y = 0.5;
+    this.damage = damage;
+    this.piercing = piercing;
+    this.piercedCount = 0;
+    this.active = true;
   }
   
   update(dt: number): void {

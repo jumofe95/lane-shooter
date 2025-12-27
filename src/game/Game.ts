@@ -1,6 +1,6 @@
 /**
  * ============================================
- * GAME - Lógica principal del juego 3D
+ * GAME - Lógica principal del juego 3D (Optimizado)
  * ============================================
  */
 
@@ -16,6 +16,7 @@ import { WaveSpawner } from './systems/WaveSpawner';
 import { GateSpawner } from './systems/GateSpawner';
 import { FormationManager } from './systems/FormationManager';
 import { Input } from './systems/Input';
+import { bulletPool, enemyPool } from './systems/ObjectPool';
 import { CONFIG, getLevelConfig } from './types';
 
 type GameState = 'start' | 'playing' | 'gameover' | 'victory' | 'levelComplete';
@@ -88,13 +89,93 @@ export class Game {
     this.victoryScoreEl = document.getElementById('victory-score')!;
     this.nextLevelEl = document.getElementById('next-level')!;
     this.playerHealthBarEl = document.getElementById('player-health-bar')!;
+    
+    // Admin panel (solo desktop)
+    this.initAdminPanel();
+  }
+  
+  private initAdminPanel(): void {
+    const adminBtn = document.getElementById('admin-btn');
+    const statsPanel = document.getElementById('stats-panel');
+    const applyBtn = document.getElementById('admin-apply');
+    
+    if (!adminBtn || !statsPanel || !applyBtn) return;
+    
+    // Toggle admin mode
+    adminBtn.addEventListener('click', () => {
+      // Solo funciona si el juego está activo
+      if (this.state !== 'playing' || !this.player) {
+        return;
+      }
+      
+      statsPanel.classList.toggle('admin-mode');
+      adminBtn.classList.toggle('active');
+      
+      // Actualizar inputs con valores actuales
+      if (statsPanel.classList.contains('admin-mode')) {
+        (document.getElementById('score-input') as HTMLInputElement).value = this.score.toString();
+        (document.getElementById('allies-input') as HTMLInputElement).value = this.player.stats.numAllies.toString();
+        (document.getElementById('damage-input') as HTMLInputElement).value = this.player.stats.damage.toString();
+        (document.getElementById('firerate-input') as HTMLInputElement).value = this.player.stats.fireRate.toString();
+        (document.getElementById('piercing-input') as HTMLInputElement).value = this.player.stats.piercing.toString();
+      }
+    });
+    
+    // Aplicar cambios
+    applyBtn.addEventListener('click', () => {
+      if (!this.player) return;
+      this.applyAdminChanges();
+      statsPanel.classList.remove('admin-mode');
+      adminBtn.classList.remove('active');
+    });
+  }
+  
+  private applyAdminChanges(): void {
+    if (!this.player) return;
+    
+    // Obtener valores de los inputs
+    const newScore = parseInt((document.getElementById('score-input') as HTMLInputElement).value) || 0;
+    const newAllies = parseInt((document.getElementById('allies-input') as HTMLInputElement).value) || 0;
+    const newDamage = parseInt((document.getElementById('damage-input') as HTMLInputElement).value) || 1;
+    const newFireRate = parseFloat((document.getElementById('firerate-input') as HTMLInputElement).value) || 1;
+    const newPiercing = parseInt((document.getElementById('piercing-input') as HTMLInputElement).value) || 1;
+    
+    // Aplicar cambios
+    this.score = newScore;
+    this.player.stats.numAllies = Math.max(0, newAllies);
+    this.player.stats.damage = Math.max(1, newDamage);
+    this.player.stats.fireRate = Math.max(0.5, newFireRate);
+    this.player.stats.piercing = Math.max(1, newPiercing);
+    
+    // Actualizar aliados
+    this.allies = this.formationManager.updateAllies(
+      this.allies,
+      this.player,
+      this.scene.entityGroup
+    );
+    
+    // Actualizar UI
+    this.updateUI();
+    
+    console.log('🔧 Admin: Stats aplicados', {
+      score: this.score,
+      allies: this.player.stats.numAllies,
+      damage: this.player.stats.damage,
+      fireRate: this.player.stats.fireRate,
+      piercing: this.player.stats.piercing
+    });
   }
   
   async start(): Promise<void> {
     this.scene = new GameScene(this.container);
-    
+
     await this.scene.renderer.init();
-    
+
+    // Inicializar pools
+    bulletPool.setScene(this.scene.entityGroup);
+    bulletPool.prewarm(50);
+    enemyPool.setScene(this.scene.entityGroup);
+
     this.initGame();
     this.gameLoop(0);
   }
@@ -338,71 +419,106 @@ export class Game {
     for (const gate of this.gates) {
       gate.update(dt);
     }
-    this.gates = this.gates.filter(g => g.active);
-    
-    // Colisiones
-    this.checkCollisions();
-    
+
+    // Colisiones optimizadas
+    this.checkCollisionsOptimized();
+
     // Actualizar formación de aliados
     this.formationManager.updatePositions(this.allies, this.player);
-    
-    // Limpiar balas inactivas de la escena
-    for (const bullet of this.bullets) {
-      if (!bullet.active) {
-        bullet.destroy(this.scene.entityGroup);
+
+    // Cleanup consolidado - un solo loop por tipo
+    this.cleanupInactiveEntities();
+
+    this.updateUI();
+  }
+
+  // Cleanup consolidado para mejor rendimiento
+  private cleanupInactiveEntities(): void {
+    // Bullets - usar pool para retornar
+    let bulletWriteIdx = 0;
+    for (let i = 0; i < this.bullets.length; i++) {
+      const bullet = this.bullets[i];
+      if (bullet.active) {
+        this.bullets[bulletWriteIdx++] = bullet;
+      } else {
+        bulletPool.release(bullet);
       }
     }
-    this.bullets = this.bullets.filter(b => b.active);
-    
-    // Limpiar enemigos inactivos
-    for (const enemy of [...this.enemies]) {
-      if (!enemy.active) {
-        enemy.destroy(this.scene.entityGroup);
+    this.bullets.length = bulletWriteIdx;
+
+    // Enemies - usar pool para retornar
+    let enemyWriteIdx = 0;
+    for (let i = 0; i < this.enemies.length; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.active) {
+        this.enemies[enemyWriteIdx++] = enemy;
+      } else {
+        enemyPool.release(enemy);
       }
     }
-    this.enemies = this.enemies.filter(e => e.active);
-    
-    // Limpiar puertas inactivas
-    for (const gate of [...this.gates]) {
-      if (!gate.active) {
+    this.enemies.length = enemyWriteIdx;
+
+    // Gates - no hay pool, solo remover de escena
+    let gateWriteIdx = 0;
+    for (let i = 0; i < this.gates.length; i++) {
+      const gate = this.gates[i];
+      if (gate.active) {
+        this.gates[gateWriteIdx++] = gate;
+      } else {
         gate.destroy(this.scene.entityGroup);
       }
     }
-    this.gates = this.gates.filter(g => g.active);
-    
-    this.updateUI();
+    this.gates.length = gateWriteIdx;
   }
-  
-  private checkCollisions(): void {
-    // Balas vs Enemigos
-    for (const bullet of this.bullets) {
+
+  // Detección de colisiones optimizada con early-out
+  private checkCollisionsOptimized(): void {
+    const enemySize = CONFIG.ENEMY_SIZE;
+    const bossSize = CONFIG.BOSS_SIZE;
+
+    // Pre-filtrar balas activas del jugador
+    for (let bi = 0; bi < this.bullets.length; bi++) {
+      const bullet = this.bullets[bi];
       if (!bullet.active || !bullet.isPlayerBullet) continue;
-      
-      for (const enemy of this.enemies) {
+
+      const bulletX = bullet.x;
+      const bulletZ = bullet.z;
+
+      // Balas vs Enemigos - con early-out por distancia Z
+      for (let ei = 0; ei < this.enemies.length; ei++) {
+        const enemy = this.enemies[ei];
         if (!enemy.active) continue;
-        
-        if (bullet.collidesWith(enemy, CONFIG.ENEMY_SIZE)) {
+
+        // Early-out: si la bala está muy lejos en Z, skip
+        const dz = bulletZ - enemy.z;
+        if (dz > enemySize || dz < -enemySize) continue;
+
+        // Check X distance
+        const dx = bulletX - enemy.x;
+        if (dx > enemySize || dx < -enemySize) continue;
+
+        // Full collision check
+        if (bullet.collidesWith(enemy, enemySize)) {
           const killed = enemy.takeDamage(bullet.damage);
           bullet.onHit();
-          
+
           if (killed) {
             this.score += enemy.value;
           }
-          
+
           if (!bullet.active) break;
         }
       }
-      
+
       // Balas vs Boss
       if (this.boss && this.boss.active && bullet.active) {
-        if (bullet.collidesWith(this.boss, CONFIG.BOSS_SIZE)) {
+        if (bullet.collidesWith(this.boss, bossSize)) {
           const killed = this.boss.takeDamage(bullet.damage);
           bullet.onHit();
-          
+
           if (killed) {
             this.score += this.boss.value;
-            
-            // Verificar si completó todos los niveles
+
             if (this.currentLevel >= CONFIG.MAX_LEVEL) {
               this.victory();
             } else {
@@ -412,25 +528,25 @@ export class Game {
         }
       }
     }
-    
+
     // Jugador vs Puertas
-    for (const gate of this.gates) {
+    const playerLane = this.getLane(this.player.x);
+    const playerZ = this.player.z;
+
+    for (let gi = 0; gi < this.gates.length; gi++) {
+      const gate = this.gates[gi];
       if (!gate.active) continue;
-      
-      const playerLane = this.getLane(this.player.x);
-      
-      if (gate.lane === playerLane && Math.abs(gate.z - this.player.z) < 1.5) {
+
+      if (gate.lane === playerLane && Math.abs(gate.z - playerZ) < 1.5) {
         this.player.applyModifier(gate.modifier.type, gate.modifier.value);
-        
-        console.log(`🚪 ${gate.modifier.label}`);
-        
+
         // Actualizar aliados según el nuevo número
         this.allies = this.formationManager.updateAllies(
           this.allies,
           this.player,
           this.scene.entityGroup
         );
-        
+
         gate.active = false;
       }
     }

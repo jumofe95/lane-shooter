@@ -87,6 +87,98 @@
       text-shadow: 0 0 10px rgba(0, 255, 200, 0.5);
     }
     
+    /* Admin Panel - Solo Desktop */
+    .admin-btn {
+      position: absolute;
+      bottom: 10px;
+      left: 20px;
+      background: rgba(255, 100, 0, 0.2);
+      border: 1px solid #ff6600;
+      color: #ff6600;
+      padding: 5px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s ease;
+      pointer-events: auto;
+    }
+    
+    .admin-btn:hover {
+      background: rgba(255, 100, 0, 0.4);
+      box-shadow: 0 0 10px rgba(255, 100, 0, 0.5);
+    }
+    
+    .admin-btn.active {
+      background: rgba(255, 100, 0, 0.5);
+      color: #fff;
+    }
+    
+    .stats-panel.admin-mode .stat-value {
+      display: none;
+    }
+    
+    .stats-panel .stat-input {
+      display: none;
+      width: 60px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #ff6600;
+      color: #fff;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      text-align: right;
+    }
+    
+    .stats-panel.admin-mode .stat-input {
+      display: inline-block;
+    }
+    
+    .stats-panel.admin-mode {
+      pointer-events: auto;
+    }
+    
+    .stat-input {
+      pointer-events: auto;
+    }
+    
+    .admin-apply-btn {
+      display: none;
+      width: 100%;
+      margin-top: 10px;
+      background: linear-gradient(90deg, #ff6600, #ff9900);
+      border: none;
+      color: #fff;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .admin-apply-btn:hover {
+      background: linear-gradient(90deg, #ff9900, #ffcc00);
+    }
+    
+    .stats-panel.admin-mode .admin-apply-btn {
+      display: block;
+      pointer-events: auto;
+    }
+    
+    /* Ocultar admin en móvil */
+    @media (max-width: 768px), (pointer: coarse) {
+      .admin-btn,
+      .desktop-only {
+        display: none !important;
+      }
+    }
+    
     /* Wave Indicator */
     .wave-indicator {
       position: absolute;
@@ -379,29 +471,38 @@
     <!-- HUD -->
     <div id="hud">
       <!-- Stats -->
-      <div class="stats-panel">
+      <div class="stats-panel" id="stats-panel">
         <h3>Stats</h3>
         <div class="stat-row">
           <span class="stat-label">Puntos</span>
           <span class="stat-value highlight" id="score">0</span>
+          <input type="number" class="stat-input" id="score-input" value="0">
         </div>
         <div class="stat-row">
           <span class="stat-label">Aliados</span>
-          <span class="stat-value" id="allies">2</span>
+          <span class="stat-value" id="allies">0</span>
+          <input type="number" class="stat-input" id="allies-input" value="0" min="0" max="20">
         </div>
         <div class="stat-row">
           <span class="stat-label">Daño</span>
           <span class="stat-value" id="damage">10</span>
+          <input type="number" class="stat-input" id="damage-input" value="10" min="1" max="1000">
         </div>
         <div class="stat-row">
           <span class="stat-label">Cadencia</span>
           <span class="stat-value" id="firerate">3.0</span>
+          <input type="number" class="stat-input" id="firerate-input" value="3.0" min="0.5" max="20" step="0.5">
         </div>
         <div class="stat-row">
           <span class="stat-label">Piercing</span>
           <span class="stat-value" id="piercing">1</span>
+          <input type="number" class="stat-input" id="piercing-input" value="1" min="1" max="100">
         </div>
+        <button class="admin-apply-btn" id="admin-apply">Aplicar Cambios</button>
       </div>
+      
+      <!-- Admin Button (solo desktop) -->
+      <button class="admin-btn desktop-only" id="admin-btn">Admin</button>
       
       <!-- Level & Wave -->
       <div class="wave-indicator">
