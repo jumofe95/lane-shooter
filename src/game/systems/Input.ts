@@ -8,12 +8,11 @@ export class Input {
   private keysPressed: Set<string> = new Set();
   private keysJustPressed: Set<string> = new Set();
   
-  // Touch/Swipe
-  private touchStartX: number = 0;
-  private touchCurrentX: number = 0;
+  // Touch - posición del dedo
+  private touchX: number = 0;
   private isTouching: boolean = false;
   private touchJustStarted: boolean = false;
-  private swipeDirection: number = 0; // -1 izquierda, 0 nada, 1 derecha
+  private screenWidth: number = window.innerWidth;
   
   constructor() {
     // Teclado
@@ -37,46 +36,32 @@ export class Input {
       this.keysJustPressed.clear();
     });
     
-    // Touch events
+    // Touch events - seguir el dedo
     window.addEventListener('touchstart', (e) => {
       this.isTouching = true;
       this.touchJustStarted = true;
-      this.touchStartX = e.touches[0].clientX;
-      this.touchCurrentX = e.touches[0].clientX;
+      this.touchX = e.touches[0].clientX;
       e.preventDefault();
     }, { passive: false });
     
     window.addEventListener('touchmove', (e) => {
       if (this.isTouching) {
-        this.touchCurrentX = e.touches[0].clientX;
-        
-        // Calcular dirección del swipe basado en la posición relativa al inicio
-        const deltaX = this.touchCurrentX - this.touchStartX;
-        const threshold = 10; // Umbral mínimo para detectar movimiento
-        
-        if (deltaX < -threshold) {
-          this.swipeDirection = -1; // Izquierda
-        } else if (deltaX > threshold) {
-          this.swipeDirection = 1; // Derecha
-        } else {
-          this.swipeDirection = 0;
-        }
+        this.touchX = e.touches[0].clientX;
       }
       e.preventDefault();
     }, { passive: false });
     
     window.addEventListener('touchend', () => {
       this.isTouching = false;
-      this.swipeDirection = 0;
-      this.touchStartX = 0;
-      this.touchCurrentX = 0;
     });
     
     window.addEventListener('touchcancel', () => {
       this.isTouching = false;
-      this.swipeDirection = 0;
-      this.touchStartX = 0;
-      this.touchCurrentX = 0;
+    });
+    
+    // Actualizar ancho de pantalla en resize
+    window.addEventListener('resize', () => {
+      this.screenWidth = window.innerWidth;
     });
   }
   
@@ -106,13 +91,13 @@ export class Input {
     return false;
   }
   
-  // Touch: obtener dirección del swipe (-1, 0, 1)
-  getSwipeDirection(): number {
-    return this.swipeDirection;
+  // Touch: obtener posición X normalizada (-1 a 1, donde 0 es el centro)
+  getTouchNormalizedX(): number {
+    return (this.touchX / this.screenWidth) * 2 - 1;
   }
   
   // Touch: está tocando?
-  getTouching(): boolean {
+  isTouchActive(): boolean {
     return this.isTouching;
   }
   

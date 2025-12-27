@@ -196,10 +196,11 @@ export class Game {
       this.player.move(1, dt);
     }
     
-    // Input de movimiento (táctil/swipe)
-    const swipeDir = this.input.getSwipeDirection();
-    if (swipeDir !== 0) {
-      this.player.move(swipeDir, dt);
+    // Input de movimiento (táctil - seguir el dedo)
+    if (this.input.isTouchActive()) {
+      const touchNormX = this.input.getTouchNormalizedX();
+      const targetX = touchNormX * (CONFIG.GAME_WIDTH / 2 - CONFIG.PLAYER_SIZE);
+      this.player.setTargetX(targetX);
     }
     
     // Actualizar jugador

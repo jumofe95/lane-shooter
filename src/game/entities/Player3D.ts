@@ -297,6 +297,11 @@ export class Player3D extends Entity3D {
     this.targetX += direction * CONFIG.PLAYER_SPEED * dt;
   }
   
+  setTargetX(x: number): void {
+    const halfWidth = CONFIG.GAME_WIDTH / 2 - CONFIG.PLAYER_SIZE;
+    this.targetX = Math.max(-halfWidth, Math.min(halfWidth, x));
+  }
+  
   tryShoot(scene: THREE.Group): Bullet3D | null {
     const shootInterval = 1 / this.stats.fireRate;
     
