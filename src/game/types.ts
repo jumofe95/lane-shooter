@@ -44,9 +44,9 @@ export const CONFIG = {
   PLAYER_SPEED: 15,
   PLAYER_Z: 0,
   
-  // Aliados (mismo tamaño que jugador, más espaciado)
+  // Aliados (mismo tamaño que jugador)
   ALLY_SIZE: 0.7,
-  ALLY_SPACING: 2.5,
+  ALLY_SPACING: 1.8,
   
   // Enemigos (stickmans grandes) - valores base
   ENEMY_SIZE: 1.5,
@@ -77,9 +77,9 @@ export const CONFIG = {
   GATE_COUNT_MAX: 2,
   
   // Oleadas - valores base
-  WAVE_ENEMY_COUNT_BASE: 3,
-  WAVE_SPAWN_INTERVAL_BASE: 4,
-  WAVES_BEFORE_BOSS: 7,
+  WAVE_ENEMY_COUNT_BASE: 4,
+  WAVE_SPAWN_INTERVAL_BASE: 3.5,
+  WAVES_BEFORE_BOSS: 6,
   
   // Niveles
   MAX_LEVEL: 10,
@@ -92,22 +92,22 @@ export const CONFIG = {
 
 // Función para calcular dificultad según nivel (1-10)
 export function getLevelConfig(level: number) {
-  const enemyDifficulty = 1 + (level - 1) * 0.20; // +20% vida por nivel
+  const enemyDifficulty = 1 + (level - 1) * 0.25; // +25% vida por nivel
   
   return {
-    // Enemigos más rápidos y con más vida (+20% por nivel)
-    enemySpeed: CONFIG.ENEMY_SPEED_BASE * (1 + (level - 1) * 0.1),
+    // Enemigos más rápidos y con más vida
+    enemySpeed: CONFIG.ENEMY_SPEED_BASE * (1 + (level - 1) * 0.12),
     enemyHealth: Math.floor(CONFIG.ENEMY_HEALTH_BASE * enemyDifficulty),
     
-    // Más enemigos por oleada (empieza con 3, +1 cada 2 niveles)
-    enemiesPerWave: CONFIG.WAVE_ENEMY_COUNT_BASE + Math.floor((level - 1) * 0.6),
+    // Más enemigos por oleada - escalado agresivo (+1 por nivel)
+    enemiesPerWave: CONFIG.WAVE_ENEMY_COUNT_BASE + (level - 1),
     
     // Oleadas más frecuentes en niveles altos
-    waveInterval: Math.max(2.5, CONFIG.WAVE_SPAWN_INTERVAL_BASE - (level - 1) * 0.15),
+    waveInterval: Math.max(2, CONFIG.WAVE_SPAWN_INTERVAL_BASE - (level - 1) * 0.2),
     
-    // Boss con el doble de vida base y escala más agresivamente
-    bossHealth: Math.floor(CONFIG.BOSS_HEALTH_BASE * 2 * (1 + (level - 1) * 0.5)),
-    bossSpeed: CONFIG.BOSS_SPEED_BASE * (1 + (level - 1) * 0.1),
+    // Boss con el doble de vida base y escala agresivamente
+    bossHealth: Math.floor(CONFIG.BOSS_HEALTH_BASE * 2 * (1 + (level - 1) * 0.6)),
+    bossSpeed: CONFIG.BOSS_SPEED_BASE * (1 + (level - 1) * 0.12),
     
     // Puntos por matar
     enemyValue: 10 + (level - 1) * 5,

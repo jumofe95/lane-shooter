@@ -39,18 +39,18 @@ export class WaveSpawner {
     
     const levelConfig = getLevelConfig(this.currentLevel);
     
-    // Más enemigos según el nivel y la oleada actual
+    // Más enemigos según el nivel y la oleada actual (escalado agresivo)
     const baseCount = levelConfig.enemiesPerWave;
-    const waveBonus = Math.floor(this.currentWave / 2);
+    const waveBonus = this.currentWave; // +1 enemigo por cada oleada
     const enemyCount = baseCount + waveBonus;
     
     const positions = this.generateSpawnPositions(enemyCount);
     
     for (let i = 0; i < enemyCount; i++) {
-      const zOffset = (i % 3) * 3;
+      const zOffset = (i % 4) * 2.5; // Más separación en Z
       
-      // Vida aumenta según el nivel y ligeramente por oleada
-      const health = levelConfig.enemyHealth + (this.currentWave - 1) * 3;
+      // Vida aumenta según el nivel y por oleada
+      const health = levelConfig.enemyHealth + (this.currentWave - 1) * 5;
       
       const enemy = new Enemy3D(
         positions[i],

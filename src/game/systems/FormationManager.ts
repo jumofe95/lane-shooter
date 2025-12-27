@@ -54,8 +54,9 @@ export class FormationManager {
     const side = index % 2 === 0 ? -1 : 1;
     const row = Math.floor(index / 2);
     
+    // Aliados más pegados al jugador
     const offsetX = side * (row + 1) * CONFIG.ALLY_SPACING;
-    const offsetZ = (row + 1) * CONFIG.ALLY_SPACING * 0.8;
+    const offsetZ = (row + 1) * CONFIG.ALLY_SPACING * 0.5; // Más cerca en Z
     
     return {
       x: playerX + offsetX,
