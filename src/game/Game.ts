@@ -16,9 +16,9 @@ import { WaveSpawner } from './systems/WaveSpawner';
 import { GateSpawner } from './systems/GateSpawner';
 import { FormationManager } from './systems/FormationManager';
 import { Input } from './systems/Input';
-import { CONFIG } from './types';
+import { CONFIG, getLevelConfig } from './types';
 
-type GameState = 'start' | 'playing' | 'gameover' | 'victory';
+type GameState = 'start' | 'playing' | 'gameover' | 'victory' | 'levelComplete';
 
 export class Game {
   private container: HTMLElement;
@@ -39,6 +39,7 @@ export class Game {
   private state: GameState = 'start';
   private score: number = 0;
   private lastTime: number = 0;
+  private currentLevel: number = 1;
   
   // UI Elements
   private scoreEl!: HTMLElement;
@@ -47,13 +48,16 @@ export class Game {
   private firerateEl!: HTMLElement;
   private piercingEl!: HTMLElement;
   private waveEl!: HTMLElement;
+  private levelEl!: HTMLElement;
   private bossHealthEl!: HTMLElement;
   private bossBarEl!: HTMLElement;
   private startScreenEl!: HTMLElement;
   private gameoverScreenEl!: HTMLElement;
   private victoryScreenEl!: HTMLElement;
+  private levelCompleteScreenEl!: HTMLElement;
   private finalScoreEl!: HTMLElement;
   private victoryScoreEl!: HTMLElement;
+  private nextLevelEl!: HTMLElement;
   private playerHealthBarEl!: HTMLElement;
   
   constructor(container: HTMLElement) {
@@ -73,13 +77,16 @@ export class Game {
     this.firerateEl = document.getElementById('firerate')!;
     this.piercingEl = document.getElementById('piercing')!;
     this.waveEl = document.getElementById('wave')!;
+    this.levelEl = document.getElementById('level')!;
     this.bossHealthEl = document.getElementById('boss-health')!;
     this.bossBarEl = document.getElementById('boss-bar')!;
     this.startScreenEl = document.getElementById('start-screen')!;
     this.gameoverScreenEl = document.getElementById('gameover-screen')!;
     this.victoryScreenEl = document.getElementById('victory-screen')!;
+    this.levelCompleteScreenEl = document.getElementById('level-complete-screen')!;
     this.finalScoreEl = document.getElementById('final-score')!;
     this.victoryScoreEl = document.getElementById('victory-score')!;
+    this.nextLevelEl = document.getElementById('next-level')!;
     this.playerHealthBarEl = document.getElementById('player-health-bar')!;
   }
   
@@ -131,9 +138,11 @@ export class Game {
     this.bullets = [];
     this.gates = [];
     this.score = 0;
+    this.currentLevel = 1;
     
     // Reset sistemas
     this.waveSpawner.reset();
+    this.waveSpawner.setLevel(this.currentLevel);
     this.gateSpawner.reset();
     
     // Actualizar formación inicial (0 aliados)
@@ -145,6 +154,51 @@ export class Game {
     
     this.updateUI();
     this.updatePlayerHealthBar();
+  }
+  
+  private clearLevelEntities(): void {
+    // Limpiar enemigos, balas, puertas y boss del nivel actual
+    for (const enemy of this.enemies) {
+      this.scene.entityGroup.remove(enemy.mesh);
+    }
+    for (const bullet of this.bullets) {
+      this.scene.entityGroup.remove(bullet.mesh);
+    }
+    for (const gate of this.gates) {
+      this.scene.entityGroup.remove(gate.mesh);
+    }
+    if (this.boss) {
+      this.scene.entityGroup.remove(this.boss.mesh);
+      this.boss = null;
+    }
+    
+    this.enemies = [];
+    this.bullets = [];
+    this.gates = [];
+  }
+  
+  private startNextLevel(): void {
+    this.currentLevel++;
+    this.levelCompleteScreenEl.classList.remove('visible');
+    this.bossHealthEl.classList.remove('visible');
+    
+    // Limpiar entidades del nivel anterior
+    this.clearLevelEntities();
+    
+    // Regenerar solo 30% de la vida (no resetear completamente)
+    const healthRegen = this.player.maxHealth * 0.30;
+    this.player.health = Math.min(this.player.maxHealth, this.player.health + healthRegen);
+    this.updatePlayerHealthBar();
+    
+    // Resetear spawners para el nuevo nivel
+    this.waveSpawner.resetForNewLevel();
+    this.waveSpawner.setLevel(this.currentLevel);
+    this.gateSpawner.reset();
+    
+    this.state = 'playing';
+    this.updateUI();
+    
+    console.log(`🎮 ¡Comenzando Nivel ${this.currentLevel}! Vida: ${Math.floor(this.player.health)}/${this.player.maxHealth}`);
   }
   
   private gameLoop = (time: number): void => {
@@ -169,6 +223,8 @@ export class Game {
         this.startGame();
       } else if (this.state === 'gameover' || this.state === 'victory') {
         this.restartGame();
+      } else if (this.state === 'levelComplete') {
+        this.startNextLevel();
       }
     }
   }
@@ -339,7 +395,13 @@ export class Game {
           
           if (killed) {
             this.score += this.boss.value;
-            this.victory();
+            
+            // Verificar si completó todos los niveles
+            if (this.currentLevel >= CONFIG.MAX_LEVEL) {
+              this.victory();
+            } else {
+              this.levelComplete();
+            }
           }
         }
       }
@@ -374,12 +436,18 @@ export class Game {
   }
   
   private spawnBoss(): void {
-    this.boss = new Boss3D();
+    const levelConfig = getLevelConfig(this.currentLevel);
+    
+    this.boss = new Boss3D(
+      levelConfig.bossHealth,
+      levelConfig.bossSpeed,
+      levelConfig.bossValue
+    );
     this.scene.entityGroup.add(this.boss.mesh);
     this.bossHealthEl.classList.add('visible');
     this.waveSpawner.pause();
     
-    console.log('👹 ¡BOSS APARECIÓ!');
+    console.log(`👹 ¡BOSS del Nivel ${this.currentLevel} APARECIÓ!`);
   }
   
   private updateUI(): void {
@@ -388,6 +456,7 @@ export class Game {
     this.damageEl.textContent = this.player.stats.damage.toString();
     this.firerateEl.textContent = this.player.stats.fireRate.toFixed(1);
     this.piercingEl.textContent = this.player.stats.piercing.toString();
+    this.levelEl.textContent = this.currentLevel.toString();
   }
   
   private updatePlayerHealthBar(): void {
@@ -410,13 +479,22 @@ export class Game {
     console.log('💀 GAME OVER - Puntuación:', this.score);
   }
   
+  private levelComplete(): void {
+    this.state = 'levelComplete';
+    this.nextLevelEl.textContent = (this.currentLevel + 1).toString();
+    this.levelCompleteScreenEl.classList.add('visible');
+    this.bossHealthEl.classList.remove('visible');
+    
+    console.log(`✅ ¡Nivel ${this.currentLevel} Completado! - Puntuación: ${this.score}`);
+  }
+  
   private victory(): void {
     this.state = 'victory';
     this.victoryScoreEl.textContent = this.score.toString();
     this.victoryScreenEl.classList.add('visible');
     this.bossHealthEl.classList.remove('visible');
     
-    console.log('🏆 ¡VICTORIA! - Puntuación:', this.score);
+    console.log('🏆 ¡VICTORIA TOTAL! - Puntuación:', this.score);
   }
 }
 

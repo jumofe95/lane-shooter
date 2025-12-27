@@ -109,6 +109,31 @@
       letter-spacing: 3px;
     }
     
+    .level-display {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0, 255, 200, 0.2);
+    }
+    
+    .level-label {
+      color: #ffd700;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      display: block;
+    }
+    
+    .level-number {
+      color: #ffd700;
+      font-size: 2rem;
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+    
+    .level-separator {
+      color: #666;
+      font-size: 1rem;
+    }
+    
     /* Boss Health Bar */
     .boss-health {
       position: absolute;
@@ -184,6 +209,23 @@
     .center-message.victory h1 {
       color: #ffd700;
       text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    }
+    
+    .center-message.levelcomplete h1 {
+      color: #00ff88;
+      text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+    }
+    
+    .next-level-text {
+      color: #fff;
+      font-size: 1.5rem;
+      margin: 20px 0;
+    }
+    
+    .next-level-text span {
+      color: #ffd700;
+      font-weight: 700;
+      font-size: 2rem;
     }
     
     .center-message p {
@@ -361,8 +403,13 @@
         </div>
       </div>
       
-      <!-- Wave -->
+      <!-- Level & Wave -->
       <div class="wave-indicator">
+        <div class="level-display">
+          <span class="level-label">NIVEL</span>
+          <span class="level-number" id="level">1</span>
+          <span class="level-separator">/10</span>
+        </div>
         <div class="wave-label">Oleada</div>
         <div class="wave-number" id="wave">1</div>
       </div>
@@ -392,9 +439,18 @@
         <div class="prompt mobile-only">Toca para reintentar</div>
       </div>
       
+      <!-- Level Complete -->
+      <div class="center-message levelcomplete" id="level-complete-screen">
+        <h1>¡Nivel Completado!</h1>
+        <p class="next-level-text">Prepárate para el Nivel <span id="next-level">2</span></p>
+        <div class="prompt desktop-only">Presiona ESPACIO para continuar</div>
+        <div class="prompt mobile-only">Toca para continuar</div>
+      </div>
+      
       <!-- Victory -->
       <div class="center-message victory" id="victory-screen">
-        <h1>¡Victoria!</h1>
+        <h1>¡Victoria Total!</h1>
+        <p>¡Has completado los 10 niveles!</p>
         <div class="score">Puntuación Final: <span id="victory-score">0</span></div>
         <div class="prompt desktop-only">Presiona ESPACIO para jugar de nuevo</div>
         <div class="prompt mobile-only">Toca para jugar de nuevo</div>

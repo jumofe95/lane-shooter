@@ -31,13 +31,17 @@ export class Enemy3D extends Entity3D {
   private lineMaterial: THREE.MeshBasicMaterial;
   private animationPhase: number;
   
-  constructor(x: number, z: number, health: number) {
+  constructor(x: number, z: number, health: number, speed?: number, value?: number) {
     const group = new THREE.Group();
     
     const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const lineThickness = 0.1;
     
     const scale = CONFIG.ENEMY_SIZE * 1.1;
+    
+    // Guardar valores para después del super()
+    const enemySpeed = speed ?? CONFIG.ENEMY_SPEED_BASE;
+    const enemyValue = value ?? 10;
     
     // CABEZA
     const headGroup = new THREE.Group();
@@ -229,7 +233,8 @@ export class Enemy3D extends Entity3D {
     
     this.health = health;
     this.maxHealth = health;
-    this.speed = CONFIG.ENEMY_SPEED + Math.random() * 2;
+    this.speed = enemySpeed + Math.random() * 2;
+    this.value = enemyValue;
     this.animationPhase = Math.random() * Math.PI * 2;
   }
   

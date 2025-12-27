@@ -36,45 +36,46 @@ export class Ally3D extends Entity3D {
   constructor(x: number, z: number, index: number) {
     const group = new THREE.Group();
     
-    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x006633 });
-    const lineThickness = 0.06;
+    // Mismo color y tamaño que el jugador principal
+    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x003366 });
+    const lineThickness = 0.08;
     
-    const scale = CONFIG.ALLY_SIZE * 0.85;
+    const scale = CONFIG.PLAYER_SIZE * 1.2;
     
-    // CABEZA
+    // CABEZA (igual que Player3D)
     const headGroup = new THREE.Group();
     headGroup.position.y = scale * 2.4;
     
     const headRing = new THREE.Mesh(
-      new THREE.TorusGeometry(scale * 0.32, lineThickness, 8, 20),
+      new THREE.TorusGeometry(scale * 0.35, lineThickness, 8, 24),
       lineMaterial
     );
     headRing.rotation.x = Math.PI / 2;
     headGroup.add(headRing);
     
     const headFill = new THREE.Mesh(
-      new THREE.CircleGeometry(scale * 0.31, 20),
+      new THREE.CircleGeometry(scale * 0.34, 24),
       new THREE.MeshBasicMaterial({ color: 0xffffff })
     );
     headFill.position.z = 0.01;
     headGroup.add(headFill);
     
     const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-    const leftEye = new THREE.Mesh(new THREE.CircleGeometry(scale * 0.04, 6), eyeMaterial);
-    leftEye.position.set(-scale * 0.1, scale * 0.06, 0.02);
+    const leftEye = new THREE.Mesh(new THREE.CircleGeometry(scale * 0.05, 8), eyeMaterial);
+    leftEye.position.set(-scale * 0.12, scale * 0.08, 0.02);
     headGroup.add(leftEye);
     
-    const rightEye = new THREE.Mesh(new THREE.CircleGeometry(scale * 0.04, 6), eyeMaterial);
-    rightEye.position.set(scale * 0.1, scale * 0.06, 0.02);
+    const rightEye = new THREE.Mesh(new THREE.CircleGeometry(scale * 0.05, 8), eyeMaterial);
+    rightEye.position.set(scale * 0.12, scale * 0.08, 0.02);
     headGroup.add(rightEye);
     
     const smileGeometry = new THREE.BufferGeometry();
     const smilePoints: THREE.Vector3[] = [];
-    for (let i = 0; i <= 8; i++) {
-      const angle = (Math.PI * 0.25) + (i / 8) * (Math.PI * 0.5);
+    for (let i = 0; i <= 12; i++) {
+      const angle = (Math.PI * 0.2) + (i / 12) * (Math.PI * 0.6);
       smilePoints.push(new THREE.Vector3(
-        Math.cos(angle) * scale * 0.14,
-        -Math.sin(angle) * scale * 0.08 - scale * 0.04,
+        Math.cos(angle) * scale * 0.18,
+        -Math.sin(angle) * scale * 0.1 - scale * 0.05,
         0.02
       ));
     }
@@ -84,50 +85,51 @@ export class Ally3D extends Entity3D {
     
     group.add(headGroup);
     
-    // CUERPO
+    // CUERPO (igual que Player3D)
     const bodyLine = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 1.1, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 1.2, 6),
       lineMaterial
     );
-    bodyLine.position.y = scale * 1.55;
+    bodyLine.position.y = scale * 1.6;
     group.add(bodyLine);
     
-    // BRAZO IZQUIERDO CON PISTOLA
+    // BRAZO IZQUIERDO CON PISTOLA (igual que Player3D)
     const leftArmPivot = new THREE.Group();
-    leftArmPivot.position.set(-lineThickness, scale * 2.0, 0);
+    leftArmPivot.position.set(-lineThickness, scale * 2.1, 0);
     
     const leftUpperArm = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.45, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.5, 6),
       lineMaterial
     );
-    leftUpperArm.position.y = -scale * 0.22;
+    leftUpperArm.position.y = -scale * 0.25;
     leftArmPivot.add(leftUpperArm);
     
     const leftArmJoint = new THREE.Group();
-    leftArmJoint.position.y = -scale * 0.45;
+    leftArmJoint.position.y = -scale * 0.5;
     
     const leftLowerArm = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.4, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.45, 6),
       lineMaterial
     );
-    leftLowerArm.position.y = -scale * 0.2;
+    leftLowerArm.position.y = -scale * 0.22;
     leftArmJoint.add(leftLowerArm);
     
     const gunGroup = new THREE.Group();
-    gunGroup.position.y = -scale * 0.4;
+    gunGroup.position.y = -scale * 0.45;
     
+    const gunMaterial = new THREE.MeshBasicMaterial({ color: 0x222222 });
     const gunBody = new THREE.Mesh(
-      new THREE.BoxGeometry(scale * 0.06, scale * 0.12, scale * 0.2),
-      new THREE.MeshBasicMaterial({ color: 0x333333 })
+      new THREE.BoxGeometry(scale * 0.08, scale * 0.15, scale * 0.25),
+      gunMaterial
     );
     gunGroup.add(gunBody);
     
     const gunBarrel = new THREE.Mesh(
-      new THREE.CylinderGeometry(scale * 0.025, scale * 0.025, scale * 0.15, 6),
-      new THREE.MeshBasicMaterial({ color: 0x333333 })
+      new THREE.CylinderGeometry(scale * 0.03, scale * 0.03, scale * 0.2, 6),
+      gunMaterial
     );
     gunBarrel.rotation.x = Math.PI / 2;
-    gunBarrel.position.z = -scale * 0.15;
+    gunBarrel.position.z = -scale * 0.2;
     gunGroup.add(gunBarrel);
     
     leftArmJoint.add(gunGroup);
@@ -139,72 +141,72 @@ export class Ally3D extends Entity3D {
     
     group.add(leftArmPivot);
     
-    // BRAZO DERECHO
+    // BRAZO DERECHO (igual que Player3D)
     const rightArmPivot = new THREE.Group();
-    rightArmPivot.position.set(lineThickness, scale * 2.0, 0);
+    rightArmPivot.position.set(lineThickness, scale * 2.1, 0);
     
     const rightUpperArm = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.45, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.5, 6),
       lineMaterial
     );
-    rightUpperArm.position.y = -scale * 0.22;
+    rightUpperArm.position.y = -scale * 0.25;
     rightArmPivot.add(rightUpperArm);
     
     const rightArmJoint = new THREE.Group();
-    rightArmJoint.position.y = -scale * 0.45;
+    rightArmJoint.position.y = -scale * 0.5;
     
     const rightLowerArm = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.4, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.45, 6),
       lineMaterial
     );
-    rightLowerArm.position.y = -scale * 0.2;
+    rightLowerArm.position.y = -scale * 0.22;
     rightArmJoint.add(rightLowerArm);
     
     rightArmPivot.add(rightArmJoint);
     group.add(rightArmPivot);
     
-    // PIERNAS
+    // PIERNAS (igual que Player3D)
     const leftLegPivot = new THREE.Group();
-    leftLegPivot.position.set(-scale * 0.08, scale * 0.95, 0);
+    leftLegPivot.position.set(-scale * 0.1, scale * 1.0, 0);
     
     const leftUpperLeg = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.5, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.55, 6),
       lineMaterial
     );
-    leftUpperLeg.position.y = -scale * 0.25;
+    leftUpperLeg.position.y = -scale * 0.27;
     leftLegPivot.add(leftUpperLeg);
     
     const leftLegJoint = new THREE.Group();
-    leftLegJoint.position.y = -scale * 0.5;
+    leftLegJoint.position.y = -scale * 0.55;
     
     const leftLowerLeg = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.5, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.55, 6),
       lineMaterial
     );
-    leftLowerLeg.position.y = -scale * 0.25;
+    leftLowerLeg.position.y = -scale * 0.27;
     leftLegJoint.add(leftLowerLeg);
     
     leftLegPivot.add(leftLegJoint);
     group.add(leftLegPivot);
     
     const rightLegPivot = new THREE.Group();
-    rightLegPivot.position.set(scale * 0.08, scale * 0.95, 0);
+    rightLegPivot.position.set(scale * 0.1, scale * 1.0, 0);
     
     const rightUpperLeg = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.5, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.55, 6),
       lineMaterial
     );
-    rightUpperLeg.position.y = -scale * 0.25;
+    rightUpperLeg.position.y = -scale * 0.27;
     rightLegPivot.add(rightUpperLeg);
     
     const rightLegJoint = new THREE.Group();
-    rightLegJoint.position.y = -scale * 0.5;
+    rightLegJoint.position.y = -scale * 0.55;
     
     const rightLowerLeg = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.5, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 0.55, 6),
       lineMaterial
     );
-    rightLowerLeg.position.y = -scale * 0.25;
+    rightLowerLeg.position.y = -scale * 0.27;
     rightLegJoint.add(rightLowerLeg);
     
     rightLegPivot.add(rightLegJoint);

@@ -44,20 +44,20 @@ export const CONFIG = {
   PLAYER_SPEED: 15,
   PLAYER_Z: 0,
   
-  // Aliados
+  // Aliados (mismo tamaño que jugador, más espaciado)
   ALLY_SIZE: 0.7,
-  ALLY_SPACING: 1.5,
+  ALLY_SPACING: 2.5,
   
-  // Enemigos (stickmans grandes)
+  // Enemigos (stickmans grandes) - valores base
   ENEMY_SIZE: 1.5,
-  ENEMY_SPEED: 8,
-  ENEMY_HEALTH: 30,
+  ENEMY_SPEED_BASE: 6,
+  ENEMY_HEALTH_BASE: 25,
   ENEMY_SPAWN_Z: -80,
   
-  // Boss
+  // Boss - valores base
   BOSS_SIZE: 4,
-  BOSS_HEALTH: 500,
-  BOSS_SPEED: 3,
+  BOSS_HEALTH_BASE: 300,
+  BOSS_SPEED_BASE: 2,
   BOSS_SPAWN_Z: -60,
   
   // Balas
@@ -76,17 +76,44 @@ export const CONFIG = {
   GATE_COUNT_MIN: 2,
   GATE_COUNT_MAX: 2,
   
-  // Oleadas
+  // Oleadas - valores base
   WAVE_ENEMY_COUNT_BASE: 3,
-  WAVE_ENEMY_INCREMENT: 1,
-  WAVE_SPAWN_INTERVAL: 3.5,
-  WAVES_BEFORE_BOSS: 5,
+  WAVE_SPAWN_INTERVAL_BASE: 4,
+  WAVES_BEFORE_BOSS: 7,
+  
+  // Niveles
+  MAX_LEVEL: 10,
   
   // Cámara
   CAMERA_HEIGHT: 12,
   CAMERA_DISTANCE: 15,
   CAMERA_LOOK_AHEAD: -10,
 };
+
+// Función para calcular dificultad según nivel (1-10)
+export function getLevelConfig(level: number) {
+  const enemyDifficulty = 1 + (level - 1) * 0.20; // +20% vida por nivel
+  
+  return {
+    // Enemigos más rápidos y con más vida (+20% por nivel)
+    enemySpeed: CONFIG.ENEMY_SPEED_BASE * (1 + (level - 1) * 0.1),
+    enemyHealth: Math.floor(CONFIG.ENEMY_HEALTH_BASE * enemyDifficulty),
+    
+    // Más enemigos por oleada (empieza con 3, +1 cada 2 niveles)
+    enemiesPerWave: CONFIG.WAVE_ENEMY_COUNT_BASE + Math.floor((level - 1) * 0.6),
+    
+    // Oleadas más frecuentes en niveles altos
+    waveInterval: Math.max(2.5, CONFIG.WAVE_SPAWN_INTERVAL_BASE - (level - 1) * 0.15),
+    
+    // Boss con el doble de vida base y escala más agresivamente
+    bossHealth: Math.floor(CONFIG.BOSS_HEALTH_BASE * 2 * (1 + (level - 1) * 0.5)),
+    bossSpeed: CONFIG.BOSS_SPEED_BASE * (1 + (level - 1) * 0.1),
+    
+    // Puntos por matar
+    enemyValue: 10 + (level - 1) * 5,
+    bossValue: 100 + (level - 1) * 50,
+  };
+}
 
 // Colores del juego (en hex)
 export const COLORS = {

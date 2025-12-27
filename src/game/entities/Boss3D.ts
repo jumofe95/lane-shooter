@@ -12,6 +12,7 @@ export class Boss3D extends Entity3D {
   health: number;
   maxHealth: number;
   value: number = 100;
+  private bossSpeed: number;
   
   private head: THREE.Group;
   private bodyLine: THREE.Mesh;
@@ -28,10 +29,17 @@ export class Boss3D extends Entity3D {
   private animationPhase: number = 0;
   rings: THREE.Mesh[] = [];
   
-  constructor() {
+  constructor(health?: number, speed?: number, value?: number) {
     const group = new THREE.Group();
     
     super(group);
+    
+    // Guardar valores de configuración
+    const bossHealth = health ?? CONFIG.BOSS_HEALTH_BASE;
+    const bossSpeedVal = speed ?? CONFIG.BOSS_SPEED_BASE;
+    const bossValue = value ?? 100;
+    
+    this.bossSpeed = bossSpeedVal;
     
     const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
     const lineThickness = 0.2;
@@ -213,13 +221,14 @@ export class Boss3D extends Entity3D {
     this.rightLegJoint = rightLegJoint;
     this.lineMaterial = lineMaterial;
     
-    this.health = CONFIG.BOSS_HEALTH;
-    this.maxHealth = CONFIG.BOSS_HEALTH;
+    this.health = bossHealth;
+    this.maxHealth = bossHealth;
+    this.value = bossValue;
   }
   
   update(dt: number): void {
     if (this.z < -10) {
-      this.z += CONFIG.BOSS_SPEED * dt;
+      this.z += this.bossSpeed * dt;
     }
     
     this.animationPhase += dt * 8;
