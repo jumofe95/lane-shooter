@@ -56,7 +56,7 @@ export const CONFIG = {
   
   // Boss - valores base
   BOSS_SIZE: 4,
-  BOSS_HEALTH_BASE: 300,
+  BOSS_HEALTH_BASE: 600,
   BOSS_SPEED_BASE: 2,
   BOSS_SPAWN_Z: -60,
   

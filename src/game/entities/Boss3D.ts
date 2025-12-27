@@ -61,6 +61,7 @@ export class Boss3D extends Entity3D {
     // Asignar ataque especial según el nivel
     this.attackType = this.getAttackTypeForLevel(this.level);
     this.attackCooldown = this.getAttackCooldownForLevel(this.level);
+    console.log(`🎯 Boss nivel ${this.level} creado con ataque: ${this.attackType}`);
     
     // Movimiento lateral - más rápido y amplio según el nivel
     this.lateralSpeed = 1 + this.level * 0.5; // Velocidad: 1.5 a 6
@@ -338,8 +339,8 @@ export class Boss3D extends Entity3D {
   updateAttack(dt: number, playerX: number): BossProjectile[] {
     const projectiles: BossProjectile[] = [];
     
-    // Solo atacar cuando está en posición
-    if (this.z > -8) return projectiles;
+    // Solo atacar cuando el boss ha llegado a su posición (z >= -50)
+    if (this.z < -50) return projectiles;
     
     this.attackTimer += dt;
     
@@ -379,22 +380,45 @@ export class Boss3D extends Entity3D {
         break;
         
       case 'wave':
-        // Ráfaga de ondas + disparos direccionales
-        // Onda central
-        projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage, 'wave'));
+        // Barrera mortal con hueco - el jugador debe encontrar el hueco
+        console.log('🌊 Boss lanzando BARRERA MORTAL desde z=' + this.z);
+        // Hueco en posición aleatoria (pero alcanzable)
+        const gapPosition = (Math.random() - 0.5) * CONFIG.GAME_WIDTH * 0.6;
+        const gapSize = 2.5; // Tamaño del hueco para pasar
         
-        // Disparos en abanico (5 direcciones)
-        for (let i = -2; i <= 2; i++) {
-          const angle = i * 0.25;
-          const dir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
-          projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage * 0.8, 'orb', dir, 8));
+        // Barrera principal que llega hasta el jugador
+        const barrier = new BossProjectile(
+          0, this.z + 1, 
+          baseDamage * 1.5, 
+          'barrier',
+          undefined,
+          12, // Velocidad rápida para que llegue
+          gapPosition,
+          gapSize
+        );
+        barrier.maxLifetime = 8;
+        projectiles.push(barrier);
+        
+        // Segunda barrera con hueco en posición diferente (llega después)
+        const gapPosition2 = (Math.random() - 0.5) * CONFIG.GAME_WIDTH * 0.6;
+        const barrier2 = new BossProjectile(
+          0, this.z - 3,
+          baseDamage * 1.5,
+          'barrier',
+          undefined,
+          10,
+          gapPosition2,
+          gapSize
+        );
+        barrier2.maxLifetime = 8;
+        projectiles.push(barrier2);
+        
+        // Orbes adicionales para presionar
+        for (let i = -1; i <= 1; i += 2) {
+          const dir = new THREE.Vector3(i * 0.3, 0, 1);
+          projectiles.push(new BossProjectile(this.x, this.z + 1, baseDamage * 0.6, 'orb', dir, 6));
         }
-        
-        // Disparos laterales rápidos
-        const leftDir = new THREE.Vector3(-0.7, 0, 0.7);
-        const rightDir = new THREE.Vector3(0.7, 0, 0.7);
-        projectiles.push(new BossProjectile(this.x - 1, this.z + 1, baseDamage, 'orb', leftDir, 12));
-        projectiles.push(new BossProjectile(this.x + 1, this.z + 1, baseDamage, 'orb', rightDir, 12));
+        console.log('🌊 Creados ' + projectiles.length + ' proyectiles (2 barreras + 2 orbes)');
         break;
         
       case 'rain':

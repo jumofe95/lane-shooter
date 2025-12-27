@@ -43,6 +43,8 @@ export class Game {
   private score: number = 0;
   private lastTime: number = 0;
   private currentLevel: number = 1;
+  private isPaused: boolean = false;
+  private forcedBossLevel: number = 0; // 0 = sin forzar
   
   // UI Elements
   private scoreEl!: HTMLElement;
@@ -62,6 +64,9 @@ export class Game {
   private victoryScoreEl!: HTMLElement;
   private nextLevelEl!: HTMLElement;
   private playerHealthBarEl!: HTMLElement;
+  private pauseBtnEl!: HTMLElement;
+  private pauseOverlayEl!: HTMLElement;
+  private resumeBtnEl!: HTMLElement;
   
   constructor(container: HTMLElement) {
     this.container = container;
@@ -91,15 +96,60 @@ export class Game {
     this.victoryScoreEl = document.getElementById('victory-score')!;
     this.nextLevelEl = document.getElementById('next-level')!;
     this.playerHealthBarEl = document.getElementById('player-health-bar')!;
+    this.pauseBtnEl = document.getElementById('pause-btn')!;
+    this.pauseOverlayEl = document.getElementById('pause-overlay')!;
+    this.resumeBtnEl = document.getElementById('resume-btn')!;
     
     // Admin panel (solo desktop)
     this.initAdminPanel();
+    
+    // Sistema de pausa
+    this.initPauseSystem();
+  }
+  
+  private initPauseSystem(): void {
+    // Botón de pausa
+    this.pauseBtnEl.addEventListener('click', () => {
+      if (this.state === 'playing') {
+        this.togglePause();
+      }
+    });
+    
+    // Botón de continuar
+    this.resumeBtnEl.addEventListener('click', () => {
+      this.togglePause();
+    });
+    
+    // Tecla Escape para pausar
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.state === 'playing') {
+        this.togglePause();
+      }
+    });
+  }
+  
+  private togglePause(): void {
+    this.isPaused = !this.isPaused;
+    
+    if (this.isPaused) {
+      this.pauseOverlayEl.classList.add('visible');
+      this.pauseBtnEl.classList.add('paused');
+      this.pauseBtnEl.textContent = '▶';
+    } else {
+      this.pauseOverlayEl.classList.remove('visible');
+      this.pauseBtnEl.classList.remove('paused');
+      this.pauseBtnEl.textContent = '⏸';
+      // Resetear lastTime para evitar salto de tiempo
+      this.lastTime = performance.now();
+    }
   }
   
   private initAdminPanel(): void {
     const adminBtn = document.getElementById('admin-btn');
     const statsPanel = document.getElementById('stats-panel');
     const applyBtn = document.getElementById('admin-apply');
+    const spawnBossBtn = document.getElementById('admin-spawn-boss');
+    const bossSelect = document.getElementById('boss-select') as HTMLSelectElement;
     
     if (!adminBtn || !statsPanel || !applyBtn) return;
     
@@ -120,6 +170,7 @@ export class Game {
         (document.getElementById('damage-input') as HTMLInputElement).value = this.player.stats.damage.toString();
         (document.getElementById('firerate-input') as HTMLInputElement).value = this.player.stats.fireRate.toString();
         (document.getElementById('piercing-input') as HTMLInputElement).value = this.player.stats.piercing.toString();
+        if (bossSelect) bossSelect.value = this.forcedBossLevel.toString();
       }
     });
     
@@ -130,6 +181,23 @@ export class Game {
       statsPanel.classList.remove('admin-mode');
       adminBtn.classList.remove('active');
     });
+    
+    // Invocar boss
+    if (spawnBossBtn) {
+      spawnBossBtn.addEventListener('click', () => {
+        if (!this.player || this.boss) return;
+        
+        // Obtener nivel del boss seleccionado
+        const selectedLevel = parseInt(bossSelect?.value || '0');
+        if (selectedLevel > 0) {
+          this.forcedBossLevel = selectedLevel;
+        }
+        
+        this.adminSpawnBoss();
+        statsPanel?.classList.remove('admin-mode');
+        adminBtn?.classList.remove('active');
+      });
+    }
   }
   
   private applyAdminChanges(): void {
@@ -294,6 +362,12 @@ export class Game {
   
   private gameLoop = (time: number): void => {
     requestAnimationFrame(this.gameLoop);
+    
+    // Si está pausado, solo renderizar (no actualizar)
+    if (this.isPaused) {
+      this.scene.render();
+      return;
+    }
     
     const dt = Math.min((time - this.lastTime) / 1000, 0.1);
     
@@ -601,19 +675,37 @@ export class Game {
   }
   
   private spawnBoss(): void {
-    const levelConfig = getLevelConfig(this.currentLevel);
+    // Usar nivel forzado si está configurado, si no usar el nivel actual
+    const bossLevel = this.forcedBossLevel > 0 ? this.forcedBossLevel : this.currentLevel;
+    const levelConfig = getLevelConfig(bossLevel);
     
     this.boss = new Boss3D(
       levelConfig.bossHealth,
       levelConfig.bossSpeed,
       levelConfig.bossValue,
-      this.currentLevel
+      bossLevel
     );
     this.scene.entityGroup.add(this.boss.mesh);
     this.bossHealthEl.classList.add('visible');
     this.waveSpawner.pause();
     
-    console.log(`👹 ¡BOSS del Nivel ${this.currentLevel} APARECIÓ! Ataque: ${this.boss.getAttackName()}`);
+    // Resetear el nivel forzado después de usarlo
+    this.forcedBossLevel = 0;
+    
+    console.log(`👹 ¡BOSS del Nivel ${bossLevel} APARECIÓ! Ataque: ${this.boss.getAttackName()}`);
+  }
+  
+  private adminSpawnBoss(): void {
+    // Limpiar enemigos actuales
+    for (const enemy of this.enemies) {
+      enemyPool.release(enemy);
+    }
+    this.enemies = [];
+    
+    // Invocar el boss
+    this.spawnBoss();
+    
+    console.log('🔧 Admin: Boss invocado manualmente');
   }
   
   private updateUI(): void {
