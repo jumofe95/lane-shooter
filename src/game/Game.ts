@@ -437,7 +437,7 @@ export class Game {
         proj.active = false;
         this.updatePlayerHealthBar();
         
-        if (this.player.currentHealth <= 0) {
+        if (this.player.health <= 0) {
           this.gameOver();
           return;
         }
