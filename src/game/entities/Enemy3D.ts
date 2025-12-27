@@ -7,6 +7,11 @@
 import * as THREE from 'three';
 import { Entity3D } from './Entity3D';
 import { CONFIG } from '../types';
+import { GameScene } from '../Scene';
+
+// Segmentos reducidos para móviles
+const SEGMENTS = GameScene.isMobile ? 4 : 6;
+const TORUS_SEGMENTS = GameScene.isMobile ? 12 : 20;
 
 export class Enemy3D extends Entity3D {
   health: number;
@@ -48,14 +53,14 @@ export class Enemy3D extends Entity3D {
     headGroup.position.y = scale * 2.2;
     
     const headRing = new THREE.Mesh(
-      new THREE.TorusGeometry(scale * 0.32, lineThickness, 8, 20),
+      new THREE.TorusGeometry(scale * 0.32, lineThickness, 6, TORUS_SEGMENTS),
       lineMaterial
     );
     headRing.rotation.x = Math.PI / 2;
     headGroup.add(headRing);
     
     const headFill = new THREE.Mesh(
-      new THREE.CircleGeometry(scale * 0.31, 20),
+      new THREE.CircleGeometry(scale * 0.31, TORUS_SEGMENTS),
       new THREE.MeshBasicMaterial({ color: 0x222222 })
     );
     headFill.position.z = 0.01;
@@ -88,7 +93,7 @@ export class Enemy3D extends Entity3D {
     
     // CUERPO
     const bodyLine = new THREE.Mesh(
-      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 1.0, 6),
+      new THREE.CylinderGeometry(lineThickness, lineThickness, scale * 1.0, SEGMENTS),
       lineMaterial
     );
     bodyLine.position.y = scale * 1.5;

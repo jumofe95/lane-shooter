@@ -17,22 +17,30 @@ export class GameScene {
   entityGroup: THREE.Group;
   effectsGroup: THREE.Group;
   
+  // Detectar si es móvil para optimizaciones
+  static isMobile: boolean = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0a0a15);
-    this.scene.fog = new THREE.Fog(0x0a0a15, 30, 100);
+    // Fog más cercano en móviles para renderizar menos objetos
+    this.scene.fog = new THREE.Fog(0x0a0a15, GameScene.isMobile ? 20 : 30, GameScene.isMobile ? 70 : 100);
     
     this.camera = new THREE.PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
       0.1,
-      200
+      GameScene.isMobile ? 100 : 200
     );
     this.setupCamera();
     
-    this.renderer = new WebGPURenderer({ antialias: true });
+    // Reducir antialias y pixel ratio en móviles
+    this.renderer = new WebGPURenderer({ 
+      antialias: !GameScene.isMobile 
+    });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Limitar pixel ratio a 1.5 en móviles para mejor rendimiento
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, GameScene.isMobile ? 1.5 : 2));
     container.insertBefore(this.renderer.domElement, container.firstChild);
     
     this.groundGroup = new THREE.Group();

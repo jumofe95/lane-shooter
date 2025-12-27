@@ -205,6 +205,12 @@ export class Game {
     requestAnimationFrame(this.gameLoop);
     
     const dt = Math.min((time - this.lastTime) / 1000, 0.1);
+    
+    // Limitar a ~30 FPS en móviles para mejor rendimiento
+    if (GameScene.isMobile && dt < 0.028) {
+      return; // Skip frame si es demasiado pronto
+    }
+    
     this.lastTime = time;
     
     this.handleInput();

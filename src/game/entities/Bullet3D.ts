@@ -1,12 +1,16 @@
 /**
  * ============================================
- * BULLET3D - Proyectiles en 3D
+ * BULLET3D - Proyectiles optimizados
  * ============================================
  */
 
 import * as THREE from 'three';
 import { Entity3D } from './Entity3D';
-import { CONFIG, COLORS } from '../types';
+import { CONFIG } from '../types';
+import { SharedMaterials } from '../SharedMaterials';
+
+// Geometría compartida para todas las balas
+const bulletGeometry = new THREE.SphereGeometry(CONFIG.BULLET_SIZE, 6, 4);
 
 export class Bullet3D extends Entity3D {
   damage: number;
@@ -15,8 +19,6 @@ export class Bullet3D extends Entity3D {
   isPlayerBullet: boolean;
   speed: number;
   
-  private trail: THREE.Mesh;
-  
   constructor(
     x: number,
     z: number,
@@ -24,36 +26,15 @@ export class Bullet3D extends Entity3D {
     piercing: number,
     isPlayerBullet: boolean
   ) {
-    const group = new THREE.Group();
-    
-    const bulletGeometry = new THREE.SphereGeometry(CONFIG.BULLET_SIZE, 8, 8);
-    const bulletMaterial = new THREE.MeshBasicMaterial({
-      color: isPlayerBullet ? COLORS.bullet : COLORS.enemyBullet,
-    });
-    const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
-    group.add(bullet);
-    
-    const trailGeometry = new THREE.CylinderGeometry(
-      CONFIG.BULLET_SIZE * 0.3,
-      CONFIG.BULLET_SIZE * 0.1,
-      CONFIG.BULLET_SIZE * 3,
-      6
+    // Usar geometría y material compartidos
+    const bullet = new THREE.Mesh(
+      bulletGeometry,
+      isPlayerBullet ? SharedMaterials.bulletPlayer : SharedMaterials.bulletEnemy
     );
-    const trailMaterial = new THREE.MeshBasicMaterial({
-      color: isPlayerBullet ? COLORS.bullet : COLORS.enemyBullet,
-      transparent: true,
-      opacity: 0.5
-    });
-    const trail = new THREE.Mesh(trailGeometry, trailMaterial);
-    trail.rotation.x = isPlayerBullet ? -Math.PI / 2 : Math.PI / 2;
-    trail.position.z = isPlayerBullet ? CONFIG.BULLET_SIZE * 1.5 : -CONFIG.BULLET_SIZE * 1.5;
-    group.add(trail);
+    bullet.position.set(x, 0.5, z);
     
-    group.position.set(x, 0.5, z);
+    super(bullet);
     
-    super(group);
-    
-    this.trail = trail;
     this.damage = damage;
     this.piercing = piercing;
     this.isPlayerBullet = isPlayerBullet;
@@ -78,5 +59,10 @@ export class Bullet3D extends Entity3D {
     }
     return true;
   }
+  
+  // Override destroy para no disponer geometría/material compartidos
+  destroy(scene: THREE.Scene | THREE.Group): void {
+    scene.remove(this.mesh);
+    // No dispose geometry/material porque son compartidos
+  }
 }
-
